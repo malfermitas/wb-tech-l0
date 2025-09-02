@@ -92,7 +92,6 @@ func (db *DB) SaveOrder(order *models.Order) error {
 		return err
 	}
 
-	// Сохраняем заказ в кэш после успешного сохранения в БД
 	db.Cache.Set(order.OrderUID, order)
 	return nil
 }
@@ -176,8 +175,8 @@ func (db *DB) LoadAllOrders() error {
 			log.Printf("Failed to load order %s: %v", orderDB.OrderUID, err)
 			continue
 		}
-		// GetOrder уже сохраняет заказ в кэш, поэтому ничего дополнительно делать не нужно
-		_ = order // Используем переменную, чтобы избежать ошибки компиляции
+
+		_ = order
 	}
 
 	log.Printf("Loaded %d orders to cache", db.Cache.Size())

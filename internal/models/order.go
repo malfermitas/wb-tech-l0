@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Order struct {
@@ -19,4 +21,24 @@ type Order struct {
 	SmID              int       `json:"sm_id" fake:"{number:1,100}"`
 	DateCreated       time.Time `json:"date_created" fake:"{date}"`
 	OofShard          string    `json:"oof_shard" fake:"{number:1,9}"`
+}
+type OrderDB struct {
+	gorm.Model
+	OrderUID          string    `gorm:"primaryKey;uniqueIndex" json:"order_uid"`
+	TrackNumber       string    `json:"track_number"`
+	Entry             string    `json:"entry"`
+	Locale            string    `json:"locale"`
+	InternalSignature string    `json:"internal_signature"`
+	CustomerID        string    `json:"customer_id"`
+	DeliveryService   string    `json:"delivery_service"`
+	Shardkey          string    `json:"shardkey"`
+	SmID              int       `json:"sm_id"`
+	DateCreated       time.Time `json:"date_created"`
+	OofShard          string    `json:"oof_shard"`
+
+	DeliveryID uint     `gorm:"not null" json:"-"`
+	PaymentID  uint     `gorm:"not null" json:"-"`
+	Delivery   Delivery `gorm:"-" json:"delivery"`
+	Payment    Payment  `gorm:"-" json:"payment"`
+	Items      []Item   `gorm:"-" json:"items"`
 }

@@ -1,5 +1,7 @@
 package models
 
+import "gorm.io/gorm"
+
 type Payment struct {
 	Transaction  string `json:"transaction" fake:"{uuid}"`
 	RequestID    string `json:"request_id" fake:"{regex:[a-zA-Z0-9]{0,10}}"`
@@ -11,4 +13,10 @@ type Payment struct {
 	DeliveryCost int    `json:"delivery_cost" fake:"{number:100,2000}"`
 	GoodsTotal   int    `json:"goods_total" fake:"{number:50,5000}"`
 	CustomFee    int    `json:"custom_fee" fake:"{number:0,100}"`
+}
+
+type PaymentDB struct {
+	gorm.Model
+	Payment
+	OrderUID string `gorm:"not null;uniqueIndex" json:"-"`
 }
