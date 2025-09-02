@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ {{.OrderUID}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Информация о заказе</h1>
+
+    <div class="order-info">
+        <h2>Основная информация</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>UID заказа:</label>
+                <span>{{.OrderUID}}</span>
+            </div>
+            <div class="info-item">
+                <label>Трек-номер:</label>
+                <span>{{.TrackNumber}}</span>
+            </div>
+            <div class="info-item">
+                <label>Вход:</label>
+                <span>{{.Entry}}</span>
+            </div>
+            <div class="info-item">
+                <label>Локаль:</label>
+                <span>{{.Locale}}</span>
+            </div>
+            <div class="info-item">
+                <label>ID клиента:</label>
+                <span>{{.CustomerID}}</span>
+            </div>
+            <div class="info-item">
+                <label>Сервис доставки:</label>
+                <span>{{.DeliveryService}}</span>
+            </div>
+            <div class="info-item">
+                <label>Shardkey:</label>
+                <span>{{.Shardkey}}</span>
+            </div>
+            <div class="info-item">
+                <label>SM ID:</label>
+                <span>{{.SmID}}</span>
+            </div>
+            <div class="info-item">
+                <label>Дата создания:</label>
+                <span>{{.DateCreated.Format "2006-01-02 15:04:05"}}</span>
+            </div>
+            <div class="info-item">
+                <label>OOF Shard:</label>
+                <span>{{.OofShard}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="delivery-info">
+        <h2>Информация о доставке</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Имя:</label>
+                <span>{{.Delivery.Name}}</span>
+            </div>
+            <div class="info-item">
+                <label>Телефон:</label>
+                <span>{{.Delivery.Phone}}</span>
+            </div>
+            <div class="info-item">
+                <label>Почтовый индекс:</label>
+                <span>{{.Delivery.Zip}}</span>
+            </div>
+            <div class="info-item">
+                <label>Город:</label>
+                <span>{{.Delivery.City}}</span>
+            </div>
+            <div class="info-item">
+                <label>Адрес:</label>
+                <span>{{.Delivery.Address}}</span>
+            </div>
+            <div class="info-item">
+                <label>Регион:</label>
+                <span>{{.Delivery.Region}}</span>
+            </div>
+            <div class="info-item">
+                <label>Email:</label>
+                <span>{{.Delivery.Email}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="payment-info">
+        <h2>Информация об оплате</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Транзакция:</label>
+                <span>{{.Payment.Transaction}}</span>
+            </div>
+            <div class="info-item">
+                <label>Request ID:</label>
+                <span>{{.Payment.RequestID}}</span>
+            </div>
+            <div class="info-item">
+                <label>Валюта:</label>
+                <span>{{.Payment.Currency}}</span>
+            </div>
+            <div class="info-item">
+                <label>Провайдер:</label>
+                <span>{{.Payment.Provider}}</span>
+            </div>
+            <div class="info-item">
+                <label>Сумма:</label>
+                <span>{{.Payment.Amount}}</span>
+            </div>
+            <div class="info-item">
+                <label>Дата оплаты:</label>
+                <span>{{.Payment.PaymentDt}}</span>
+            </div>
+            <div class="info-item">
+                <label>Банк:</label>
+                <span>{{.Payment.Bank}}</span>
+            </div>
+            <div class="info-item">
+                <label>Стоимость доставки:</label>
+                <span>{{.Payment.DeliveryCost}}</span>
+            </div>
+            <div class="info-item">
+                <label>Итого товаров:</label>
+                <span>{{.Payment.GoodsTotal}}</span>
+            </div>
+            <div class="info-item">
+                <label>Плата за обработку:</label>
+                <span>{{.Payment.CustomFee}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="items-info">
+        <h2>Товары в заказе</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Название</th>
+                <th>Цена</th>
+                <th>Бренд</th>
+                <th>Количество</th>
+                <th>Статус</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Items}}
+            <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Price}}</td>
+                <td>{{.Brand}}</td>
+                <td>{{.TotalPrice}}</td>
+                <td>{{.Status}}</td>
+            </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="back-link">
+        <a href="/">← Назад к поиску</a>
+    </div>
+</div>
+</body>
+</html>

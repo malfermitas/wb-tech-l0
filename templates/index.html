@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск заказов</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Поиск заказа</h1>
+
+    <form action="/order" method="get" class="search-form">
+        <div class="form-group">
+            <label for="order_uid">Введите UID заказа:</label>
+            <input type="text" id="order_uid" name="uid" required placeholder="Например: b563feb7b2b84b6test">
+        </div>
+        <button type="submit">Найти заказ</button>
+    </form>
+
+    {{if .Error}}
+    <div class="error-message">
+        <p>{{.Error}}</p>
+    </div>
+    {{end}}
+</div>
+</body>
+</html>
