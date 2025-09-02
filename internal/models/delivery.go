@@ -1,5 +1,7 @@
 package models
 
+import "gorm.io/gorm"
+
 type Delivery struct {
 	Name    string `json:"name" fake:"{name}"`
 	Phone   string `json:"phone" fake:"{phone}"`
@@ -8,4 +10,9 @@ type Delivery struct {
 	Address string `json:"address" fake:"{street}"`
 	Region  string `json:"region" fake:"{state}"`
 	Email   string `json:"email" fake:"{email}"`
+}
+
+type DeliveryDB struct {
+	gorm.Model
+	Delivery
 }
