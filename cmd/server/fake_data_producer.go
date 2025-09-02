@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 
 type Order models.Order
 
-func run_fake_data_producer() {
+func RunFakeDataProducer() {
 	kafkaURL := "localhost:9092"
 	topic := "orders"
 
@@ -27,7 +27,7 @@ func run_fake_data_producer() {
 	defer writer.Close()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 50000; i++ {
+	for i := 0; i < 10000; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
