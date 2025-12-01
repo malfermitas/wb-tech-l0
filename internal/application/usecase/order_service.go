@@ -21,11 +21,14 @@ func (s *OrderService) SaveOrder(order *models.Order) error {
 	return s.repo.SaveOrder(order)
 }
 
-func (s *OrderService) Stats() (map[string]any, error) {
-	count, err := s.repo.GetOrderCount()
+func (s *OrderService) Stats() (ports.OrderStats, error) {
+	dbCount, err := s.repo.GetOrderCount()
 	if err != nil {
-		return nil, err
+		return ports.OrderStats{}, err
 	}
 
-	return map[string]any{"db_count": count}, nil
+	return ports.OrderStats{
+		CacheSize: s.repo.CacheSize(),
+		DBCount:   dbCount,
+	}, nil
 }

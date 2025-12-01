@@ -3,9 +3,9 @@ package ports
 import "wb-tech-l0/internal/models"
 
 type OrderUseCase interface {
-	ReceiveOrder(order *models.Order) error
+	SaveOrder(order *models.Order) error
 	GetOrder(uid string) (*models.Order, error)
-	GetStats() (OrderStats, error)
+	Stats() (OrderStats, error)
 }
 
 type OrderStats struct {

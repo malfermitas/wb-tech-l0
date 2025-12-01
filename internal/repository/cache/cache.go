@@ -1,70 +1,76 @@
 package cache
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"log"
-	"sync"
+	"time"
+
 	"wb-tech-l0/internal/models"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type OrderCache struct {
-	sync.RWMutex
-	orders map[string]*models.Order
+	client *redis.Client
+	ttl    time.Duration
 }
 
-func NewOrderCache() *OrderCache {
+func NewOrderCache(client *redis.Client, ttl time.Duration) *OrderCache {
 	return &OrderCache{
-		orders: make(map[string]*models.Order),
+		client: client,
+		ttl:    ttl,
 	}
+}
+
+func (c *OrderCache) key(orderUID string) string {
+	return "order:" + orderUID
 }
 
 func (c *OrderCache) Set(orderUID string, order *models.Order) {
-	c.Lock()
-	defer c.Unlock()
-	c.orders[orderUID] = order
-	log.Println("Order", orderUID, "has been set to cache")
+	ctx := context.Background()
+
+	data, err := json.Marshal(order)
+	if err != nil {
+		log.Printf("OrderCache: failed to marshal order %s: %v", orderUID, err)
+		return
+	}
+
+	if err := c.client.Set(ctx, c.key(orderUID), data, c.ttl).Err(); err != nil {
+		log.Printf("OrderCache: failed to set order %s in Redis: %v", orderUID, err)
+	}
 }
 
 func (c *OrderCache) Get(orderUID string) (*models.Order, bool) {
-	c.RLock()
-	defer c.RUnlock()
-	order, exists := c.orders[orderUID]
-	return order, exists
-}
+	ctx := context.Background()
 
-func (c *OrderCache) GetAll() map[string]*models.Order {
-	c.RLock()
-	defer c.RUnlock()
-
-	// Создаем копию для безопасного возврата
-	result := make(map[string]*models.Order)
-	for k, v := range c.orders {
-		result[k] = v
+	val, err := c.client.Get(ctx, c.key(orderUID)).Result()
+	if errors.Is(err, redis.Nil) {
+		return nil, false
 	}
-	return result
-}
-
-func (c *OrderCache) Preload(orders map[string]*models.Order) {
-	c.Lock()
-	defer c.Unlock()
-	for k, v := range orders {
-		c.orders[k] = v
+	if err != nil {
+		log.Printf("OrderCache: failed to get order %s from Redis: %v", orderUID, err)
+		return nil, false
 	}
-}
 
-func (c *OrderCache) Remove(orderUID string) {
-	c.Lock()
-	defer c.Unlock()
-	delete(c.orders, orderUID)
-}
+	var order models.Order
+	if err := json.Unmarshal([]byte(val), &order); err != nil {
+		log.Printf("OrderCache: failed to unmarshal order %s from Redis: %v", orderUID, err)
+		return nil, false
+	}
 
-func (c *OrderCache) Clear() {
-	c.Lock()
-	defer c.Unlock()
-	c.orders = make(map[string]*models.Order)
+	return &order, true
 }
 
 func (c *OrderCache) Size() int {
-	c.RLock()
-	defer c.RUnlock()
-	return len(c.orders)
+	ctx := context.Background()
+
+	n, err := c.client.DBSize(ctx).Result()
+	if err != nil {
+		log.Printf("OrderCache: failed to get DB size from Redis: %v", err)
+		return 0
+	}
+
+	return int(n)
 }
