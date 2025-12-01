@@ -1,0 +1,27 @@
+# config.yaml
+# Optional local configuration file.
+# All values can also be supplied via environment variables.
+# Viper loads this file first (if present) and then overwrites
+# with any env vars that are set.
+
+# ------------------------------------------------------------------
+# Process binding
+# ------------------------------------------------------------------
+http_addr: ":8080"               # HTTP server address (e.g. ":8080")
+
+# ------------------------------------------------------------------
+# Backing services
+# ------------------------------------------------------------------
+postgres_dsn: "postgres://postgres:password@postgres:5432/postgres?sslmode=disable"
+redis_addr: "localhost:6379"          # Plain host:port (or redis:// URI)
+
+kafka_brokers:
+  - "kafka:9092"
+kafka_topic: "orders"
+
+# ------------------------------------------------------------------
+# Application behaviour
+# ------------------------------------------------------------------
+cache_ttl: "10m"                 # duration string understood by time.ParseDuration
+shutdown_timeout: "10s"
+
