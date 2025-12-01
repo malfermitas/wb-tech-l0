@@ -3,27 +3,29 @@ package kafka
 import (
 	"encoding/json"
 	"log"
+
+	"wb-tech-l0/internal/application/ports"
 	"wb-tech-l0/internal/models"
-	"wb-tech-l0/internal/repository/database"
 
 	"github.com/IBM/sarama"
 )
 
+// Consumer is a Kafka adapter that depends on the OrderUseCase, not on DB.
 type Consumer struct {
-	consumer sarama.Consumer
-	db       *database.DB
+	consumer     sarama.Consumer
+	orderUseCase ports.OrderUseCase
 }
 
-func NewConsumer(brokers []string, db *database.DB) (*Consumer, error) {
-	config := sarama.NewConfig()
-	consumer, err := sarama.NewConsumer(brokers, config)
+func NewConsumer(brokers []string, uc ports.OrderUseCase) (*Consumer, error) {
+	cfg := sarama.NewConfig()
+	consumer, err := sarama.NewConsumer(brokers, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Consumer{
-		consumer: consumer,
-		db:       db,
+		consumer:     consumer,
+		orderUseCase: uc,
 	}, nil
 }
 
@@ -36,20 +38,19 @@ func (c *Consumer) Start(topic string) error {
 
 	log.Println("Kafka consumer started. Waiting for messages...")
 
-	for message := range partitionConsumer.Messages() {
-		log.Printf("Received message: %s\n", string(message.Value))
+	for msg := range partitionConsumer.Messages() {
+		log.Printf("Received message: %s\n", string(msg.Value))
 
 		var order models.Order
-		if err := json.Unmarshal(message.Value, &order); err != nil {
+		if err := json.Unmarshal(msg.Value, &order); err != nil {
 			log.Printf("Error parsing JSON: %v\n", err)
 			continue
 		}
 
-		// Сохранение в базу данных (автоматически сохраняет в кэш)
-		if err := c.db.SaveOrder(&order); err != nil {
-			log.Printf("Failed to save order %s: %v\n", order.OrderUID, err)
+		if err := c.orderUseCase.ReceiveOrder(&order); err != nil {
+			log.Printf("Failed to process order %s: %v\n", order.OrderUID, err)
 		} else {
-			log.Printf("Order %s saved successfully\n", order.OrderUID)
+			log.Printf("Order %s processed successfully\n", order.OrderUID)
 		}
 	}
 

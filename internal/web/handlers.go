@@ -3,15 +3,17 @@ package web
 import (
 	"html/template"
 	"net/http"
-	"wb-tech-l0/internal/repository/database"
+
+	"wb-tech-l0/internal/application/ports"
 )
 
+// WebHandler is an HTTP adapter that talks only to the use case layer.
 type WebHandler struct {
-	db *database.DB
+	orderUseCase ports.OrderUseCase
 }
 
-func NewWebHandler(db *database.DB) *WebHandler {
-	return &WebHandler{db: db}
+func NewWebHandler(orderUseCase ports.OrderUseCase) *WebHandler {
+	return &WebHandler{orderUseCase: orderUseCase}
 }
 
 func (h *WebHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +23,7 @@ func (h *WebHandler) IndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
-	tmpl.Execute(w, nil)
+	_ = tmpl.Execute(w, nil)
 }
 
 func (h *WebHandler) OrderPageHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,15 +33,15 @@ func (h *WebHandler) OrderPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.db.GetOrder(orderUID)
+	order, err := h.orderUseCase.GetOrder(orderUID)
 	if err != nil {
 		tmpl := template.Must(template.ParseFiles("templates/index.html"))
-		tmpl.Execute(w, map[string]string{
+		_ = tmpl.Execute(w, map[string]string{
 			"Error": "Заказ не найден: " + err.Error(),
 		})
 		return
 	}
 
 	tmpl := template.Must(template.ParseFiles("templates/order.html"))
-	tmpl.Execute(w, order)
+	_ = tmpl.Execute(w, order)
 }
