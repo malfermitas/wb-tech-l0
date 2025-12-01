@@ -1,0 +1,34 @@
+# Build stage for debug
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app
+
+# Install delve debugger
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application with debug flags
+RUN go build -gcflags="all=-N -l" -o main cmd/main.go
+
+# Final stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+# Copy the binary and delve from builder stage
+COPY --from=builder /app/main .
+COPY --from=builder /go/bin/dlv /usr/local/bin/dlv
+
+# Expose ports
+EXPOSE 8080 40000
+
+# Run with delve debugger
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "./main"]
