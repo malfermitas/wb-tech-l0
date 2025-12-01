@@ -3,19 +3,22 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"wb-tech-l0/internal/repository/database"
+
+	"wb-tech-l0/internal/application/ports"
 	"wb-tech-l0/internal/web"
 )
 
+// Server is an HTTP server adapter wiring API and web handlers.
+// It depends only on the use case interfaces.
 type Server struct {
-	db         *database.DB
-	webHandler *web.WebHandler
+	orderUseCase ports.OrderUseCase
+	webHandler   *web.WebHandler
 }
 
-func NewServer(db *database.DB) *Server {
+func NewServer(orderUseCase ports.OrderUseCase) *Server {
 	return &Server{
-		db:         db,
-		webHandler: web.NewWebHandler(db),
+		orderUseCase: orderUseCase,
+		webHandler:   web.NewWebHandler(orderUseCase),
 	}
 }
 
@@ -26,7 +29,7 @@ func (s *Server) GetOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := s.db.GetOrder(orderUID)
+	order, err := s.orderUseCase.GetOrder(orderUID)
 	if err != nil {
 		http.Error(w, "Order not found", http.StatusNotFound)
 		return
@@ -39,17 +42,14 @@ func (s *Server) GetOrderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) StatsHandler(w http.ResponseWriter, r *http.Request) {
-	stats := map[string]interface{}{
-		"cache_size": s.db.Cache.Size(),
-	}
-
-	count, err := s.db.GetOrderCount()
-	if err == nil {
-		stats["db_count"] = count
+	stats, err := s.orderUseCase.GetStats()
+	if err != nil {
+		http.Error(w, "Failed to get stats", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stats)
+	_ = json.NewEncoder(w).Encode(stats)
 }
 
 func (s *Server) Start(addr string) error {
