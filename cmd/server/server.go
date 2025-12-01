@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -9,17 +10,39 @@ import (
 )
 
 // Server is an HTTP server adapter wiring API and web handlers.
-// It depends only on the use case interfaces.
+// It depends only on the use case interfaces and wraps http.Server
+// to allow graceful shutdown.
 type Server struct {
 	orderUseCase ports.OrderUseCase
 	webHandler   *web.WebHandler
+	httpServer   *http.Server
 }
 
 func NewServer(orderUseCase ports.OrderUseCase) *Server {
-	return &Server{
+	webHandler := web.NewWebHandler(orderUseCase)
+
+	mux := http.NewServeMux()
+
+	s := &Server{
 		orderUseCase: orderUseCase,
-		webHandler:   web.NewWebHandler(orderUseCase),
+		webHandler:   webHandler,
+		httpServer: &http.Server{
+			Handler: mux,
+		},
 	}
+
+	// API routes
+	mux.HandleFunc("/order/", s.GetOrderHandler)
+	mux.HandleFunc("/stats", s.StatsHandler)
+
+	// Web routes
+	mux.HandleFunc("/", s.webHandler.IndexHandler)
+	mux.HandleFunc("/order", s.webHandler.OrderPageHandler)
+
+	// Static files
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
+	return s
 }
 
 func (s *Server) GetOrderHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +65,7 @@ func (s *Server) GetOrderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) StatsHandler(w http.ResponseWriter, r *http.Request) {
-	stats, err := s.orderUseCase.GetStats()
+	stats, err := s.orderUseCase.Stats()
 	if err != nil {
 		http.Error(w, "Failed to get stats", http.StatusInternalServerError)
 		return
@@ -53,16 +76,10 @@ func (s *Server) StatsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) Start(addr string) error {
-	// API routes
-	http.HandleFunc("/order/", s.GetOrderHandler)
-	http.HandleFunc("/stats", s.StatsHandler)
+	s.httpServer.Addr = addr
+	return s.httpServer.ListenAndServe()
+}
 
-	// Web routes
-	http.HandleFunc("/", s.webHandler.IndexHandler)
-	http.HandleFunc("/order", s.webHandler.OrderPageHandler)
-
-	// Static files
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-
-	return http.ListenAndServe(addr, nil)
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }

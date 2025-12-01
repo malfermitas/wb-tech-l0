@@ -13,7 +13,7 @@ type DB struct {
 	Cache *cache.OrderCache
 }
 
-func NewDB(dsn string, cache *cache.OrderCache) (*DB, error) {
+func NewDB(dsn string, c *cache.OrderCache) (*DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -21,16 +21,15 @@ func NewDB(dsn string, cache *cache.OrderCache) (*DB, error) {
 
 	return &DB{
 		Conn:  db,
-		Cache: cache,
+		Cache: c,
 	}, nil
 }
 
 func (db *DB) Migrate() error {
-	err := db.Conn.AutoMigrate(
+	return db.Conn.AutoMigrate(
 		&db_models.DeliveryDB{},
 		&db_models.PaymentDB{},
 		&db_models.OrderDB{},
 		&db_models.ItemDB{},
 	)
-	return err
 }

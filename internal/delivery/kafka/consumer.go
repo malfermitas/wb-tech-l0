@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
@@ -29,7 +30,8 @@ func NewConsumer(brokers []string, uc ports.OrderUseCase) (*Consumer, error) {
 	}, nil
 }
 
-func (c *Consumer) Start(topic string) error {
+// Start consumes messages from the given topic until the context is cancelled.
+func (c *Consumer) Start(ctx context.Context, topic string) error {
 	partitionConsumer, err := c.consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
 	if err != nil {
 		return err
@@ -38,23 +40,33 @@ func (c *Consumer) Start(topic string) error {
 
 	log.Println("Kafka consumer started. Waiting for messages...")
 
-	for msg := range partitionConsumer.Messages() {
-		log.Printf("Received message: %s\n", string(msg.Value))
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Kafka consumer: context cancelled, stopping")
+			return nil
 
-		var order models.Order
-		if err := json.Unmarshal(msg.Value, &order); err != nil {
-			log.Printf("Error parsing JSON: %v\n", err)
-			continue
-		}
+		case msg, ok := <-partitionConsumer.Messages():
+			if !ok {
+				log.Println("Kafka consumer: partition consumer channel closed")
+				return nil
+			}
 
-		if err := c.orderUseCase.ReceiveOrder(&order); err != nil {
-			log.Printf("Failed to process order %s: %v\n", order.OrderUID, err)
-		} else {
-			log.Printf("Order %s processed successfully\n", order.OrderUID)
+			log.Printf("Received message: %s\n", string(msg.Value))
+
+			var order models.Order
+			if err := json.Unmarshal(msg.Value, &order); err != nil {
+				log.Printf("Error parsing JSON: %v\n", err)
+				continue
+			}
+
+			if err := c.orderUseCase.SaveOrder(&order); err != nil {
+				log.Printf("Failed to process order %s: %v\n", order.OrderUID, err)
+			} else {
+				log.Printf("Order %s processed successfully\n", order.OrderUID)
+			}
 		}
 	}
-
-	return nil
 }
 
 func (c *Consumer) Close() error {
