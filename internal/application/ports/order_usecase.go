@@ -9,6 +9,6 @@ type OrderUseCase interface {
 }
 
 type OrderStats struct {
-	CacheSize int
-	DBCount   int64
+	CacheSize int   `json:"cache_size"`
+	DBCount   int64 `json:"db_count"`
 }

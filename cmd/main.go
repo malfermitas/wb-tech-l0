@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
+	"wb-tech-l0/internal/config"
 
 	"wb-tech-l0/cmd/server"
 	"wb-tech-l0/internal/application/usecase"
@@ -17,33 +17,25 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	httpAddr      = ":8080"
-	kafkaTopic    = "orders"
-	kafkaBroker   = "localhost:9092"
-	postgresDSN   = "host=localhost user=postgres password=password dbname=postgres port=5432 sslmode=disable"
-	redisAddr     = "localhost:6379"
-	cacheTTL      = 10 * time.Minute
-	shutdownGrace = 10 * time.Second
-)
-
 func main() {
+	cfg := config.Load()
+
 	// Root context with OS signal cancellation.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	// --- Infrastructure setup ---
 
-	redisClient := newRedisClient()
+	redisClient := newRedisClient(cfg.RedisAddr)
 	defer func() {
 		if err := redisClient.Close(); err != nil {
 			log.Printf("Failed to close Redis client: %v", err)
 		}
 	}()
 
-	orderCache := cache.NewOrderCache(redisClient, cacheTTL)
+	orderCache := cache.NewOrderCache(redisClient, cfg.CacheTTL)
 
-	db := newDatabase(orderCache)
+	db := newDatabase(cfg.PostgresDSN, orderCache)
 	defer func() {
 		sqlDB, err := db.Conn.DB()
 		if err != nil {
@@ -65,7 +57,7 @@ func main() {
 	httpServer := server.NewServer(orderUC)
 
 	kafkaConsumer, err := kafka.NewConsumer(
-		[]string{kafkaBroker},
+		cfg.KafkaBrokers,
 		orderUC,
 	)
 	if err != nil {
@@ -85,8 +77,8 @@ func main() {
 	// HTTP server lifecycle
 	go func() {
 		defer wg.Done()
-		log.Printf("Starting HTTP server on %s", httpAddr)
-		if err := httpServer.Start(httpAddr); err != nil {
+		log.Printf("Starting HTTP server on %s", cfg.HTTPAddr)
+		if err := httpServer.Start(cfg.HTTPAddr); err != nil {
 			// http.ErrServerClosed is expected on graceful shutdown
 			log.Printf("HTTP server stopped: %v", err)
 		}
@@ -95,8 +87,8 @@ func main() {
 	// Kafka consumer lifecycle
 	go func() {
 		defer wg.Done()
-		log.Printf("Starting Kafka consumer on %s, topic %s", kafkaBroker, kafkaTopic)
-		if err := kafkaConsumer.Start(ctx, kafkaTopic); err != nil && ctx.Err() == nil {
+		log.Printf("Starting Kafka consumer on %s, topic %s", cfg.KafkaBrokers, cfg.KafkaTopic)
+		if err := kafkaConsumer.Start(ctx, cfg.KafkaTopic); err != nil && ctx.Err() == nil {
 			log.Printf("Kafka consumer error: %v", err)
 		}
 	}()
@@ -106,7 +98,7 @@ func main() {
 	<-ctx.Done()
 	log.Println("Shutdown signal received, shutting down...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
@@ -118,21 +110,22 @@ func main() {
 	log.Println("Shutdown complete")
 }
 
-func newRedisClient() *redis.Client {
+func newRedisClient(addr string) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-		// Add Password / DB from config if needed.
+		Addr: addr,
 	})
 
 	if err := client.Ping(context.Background()).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis at %s: %v", redisAddr, err)
+		log.Fatalf("Failed to connect to Redis at %s: %v", addr, err)
 	}
+
+	log.Printf("Connected to Redis at %s", addr)
 
 	return client
 }
 
-func newDatabase(orderCache *cache.OrderCache) *database.DB {
-	db, err := database.NewDB(postgresDSN, orderCache)
+func newDatabase(dsn string, orderCache *cache.OrderCache) *database.DB {
+	db, err := database.NewDB(dsn, orderCache)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -140,6 +133,8 @@ func newDatabase(orderCache *cache.OrderCache) *database.DB {
 	if err := db.Migrate(); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
+
+	log.Println("Connected to database")
 
 	return db
 }
