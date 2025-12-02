@@ -27,7 +27,7 @@ func ToItemDB(item models.Item, orderUID string) ItemDB {
 		ChrtID:      item.ChrtID,
 		TrackNumber: item.TrackNumber,
 		Price:       item.Price,
-		Rid:         item.Rid,
+		Rid:         item.RID,
 		Name:        item.Name,
 		Sale:        item.Sale,
 		Size:        item.Size,

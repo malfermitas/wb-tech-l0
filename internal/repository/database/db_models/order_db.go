@@ -55,7 +55,7 @@ func ToDomainOrder(
 			ChrtID:      it.ChrtID,
 			TrackNumber: it.TrackNumber,
 			Price:       it.Price,
-			Rid:         it.Rid,
+			RID:         it.Rid,
 			Name:        it.Name,
 			Sale:        it.Sale,
 			Size:        it.Size,
