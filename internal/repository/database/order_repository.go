@@ -85,9 +85,9 @@ func (db *DB) loadOrderFromDB(orderUID string) (*models.Order, error) {
 	return db_models.ToDomainOrder(orderDB, deliveryDB, paymentDB, itemsDB), nil
 }
 
-func (db *DB) LoadAllOrdersToCache() error {
+func (db *DB) LoadOrdersToCache(maxOrdersCount int) error {
 	var orderDBs []db_models.OrderDB
-	if err := db.Conn.Find(&orderDBs).Error; err != nil {
+	if err := db.Conn.Order("updated_at DESC").Limit(maxOrdersCount).Find(&orderDBs).Error; err != nil {
 		return err
 	}
 

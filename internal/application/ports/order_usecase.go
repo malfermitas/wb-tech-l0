@@ -6,6 +6,7 @@ type OrderUseCase interface {
 	SaveOrder(order *models.Order) error
 	GetOrder(uid string) (*models.Order, error)
 	Stats() (OrderStats, error)
+	LoadOrdersToCache(maxOrdersCount int) error
 }
 
 type OrderStats struct {

@@ -16,6 +16,8 @@ type Config struct {
 	KafkaBrokers []string
 	KafkaTopic   string
 
+	CachePreloadCount int
+
 	CacheTTL        time.Duration
 	ShutdownTimeout time.Duration
 }
@@ -78,17 +80,19 @@ func Load() *Config {
 		return d
 	}
 
+	cachePreloadCount := v.GetInt("CACHE_PRELOAD_COUNT")
 	cacheTTL := parseDur("CACHE_TTL", 10*time.Minute)
 	shutdownTimeout := parseDur("SHUTDOWN_TIMEOUT", 10*time.Second)
 
 	// --------------------------------------------------------------------
 	return &Config{
-		HTTPAddr:        httpAddr,
-		PostgresDSN:     postgresDSN,
-		RedisAddr:       redisAddr,
-		KafkaBrokers:    kafkaBrokers,
-		KafkaTopic:      kafkaTopic,
-		CacheTTL:        cacheTTL,
-		ShutdownTimeout: shutdownTimeout,
+		HTTPAddr:          httpAddr,
+		PostgresDSN:       postgresDSN,
+		RedisAddr:         redisAddr,
+		KafkaBrokers:      kafkaBrokers,
+		KafkaTopic:        kafkaTopic,
+		CachePreloadCount: cachePreloadCount,
+		CacheTTL:          cacheTTL,
+		ShutdownTimeout:   shutdownTimeout,
 	}
 }

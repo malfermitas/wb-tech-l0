@@ -22,6 +22,7 @@ kafka_topic: "orders"
 # ------------------------------------------------------------------
 # Application behaviour
 # ------------------------------------------------------------------
+cache_preload_count: 1000
 cache_ttl: "10m"                 # duration string understood by time.ParseDuration
 shutdown_timeout: "10s"
 

@@ -72,7 +72,7 @@ func main() {
 	// --- Run servers ---
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 
 	// HTTP server lifecycle
 	go func() {
@@ -90,6 +90,16 @@ func main() {
 		log.Printf("Starting Kafka consumer on %s, topic %s", cfg.KafkaBrokers, cfg.KafkaTopic)
 		if err := kafkaConsumer.Start(ctx, cfg.KafkaTopic); err != nil && ctx.Err() == nil {
 			log.Printf("Kafka consumer error: %v", err)
+		}
+	}()
+
+	// Fill cache with orders from DB
+
+	go func() {
+		defer wg.Done()
+		log.Printf("Filling cache with orders from DB...")
+		if err := orderUC.LoadOrdersToCache(cfg.CachePreloadCount); err != nil {
+			log.Printf("Failed to load orders to cache: %v", err)
 		}
 	}()
 

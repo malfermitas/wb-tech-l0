@@ -32,3 +32,7 @@ func (s *OrderService) Stats() (ports.OrderStats, error) {
 		DBCount:   dbCount,
 	}, nil
 }
+
+func (s *OrderService) LoadOrdersToCache(maxOrdersCount int) error {
+	return s.repo.LoadOrdersToCache(maxOrdersCount)
+}
