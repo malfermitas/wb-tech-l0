@@ -159,24 +159,6 @@ HTTP по адресу из http_addr (по умолчанию http://localhost:
 
 ---
 
-## Модель данных (в упрощённом виде)
-
-Домен:
-- Order
-    - Delivery
-    - Payment
-    - []Item
-
-Хранилище (db_models):
-- OrderDB (основная запись, ключ — OrderUID)
-- DeliveryDB (FK: OrderUID)
-- PaymentDB (FK: OrderUID)
-- ItemDB (FK: OrderUID, позиции заказа)
-
-Маппинг домен -> БД выполняется при сохранении (например, ToPaymentDB).
-
----
-
 ## Тестирование
 
 Покрыты:
